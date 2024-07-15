@@ -1,3 +1,6 @@
+from loguru import logger
+
+
 class BookmarkLine:
     # 缩进数量
     intentationCount = -1
@@ -13,4 +16,5 @@ class BookmarkLine:
         self.page = page
 
     def __str__(self):
+        logger.info(self.intentationCount * "\t" + self.index + " " + self.content + "\t" + str(self.page))
         return self.intentationCount * "\t" + self.index + " " + self.content + "\t" + str(self.page)
