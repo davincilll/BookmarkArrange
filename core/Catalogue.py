@@ -1,6 +1,9 @@
 # 用于封装书签信息
 import re
 
+from loguru import logger
+
+from core.BookmarkLine import BookmarkLine
 from core.BookmarkUtil import BookmarkUtil
 
 
@@ -8,7 +11,7 @@ class Catalogue:
     # 需要封装各类文本信息
     rowContent = ""
     formatContent = ""
-    BookmarkLines = []
+    BookmarkLines: list[BookmarkLine] = []
 
     # 封装原始目录信息
     def __init__(self):
@@ -45,4 +48,15 @@ class Catalogue:
 
     # 获取page状态
     def getPageStatus(self):
-        pass
+        """
+        这里查看目录的页数状态
+        :return: true 表示目录页数已经确定
+                false 表示目录页数还没有确定
+        """
+        for bookmarkLine in self.BookmarkLines:
+            # 如果书签行的页面还没有确定，则返回false
+            # 这里会返回false
+            if not bookmarkLine.getPageStatus():
+                logger.warning("目录页数还没有确定")
+                return False
+        return True

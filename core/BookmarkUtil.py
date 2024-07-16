@@ -29,7 +29,12 @@ class BookmarkUtil:
         page = -1
         # 这里生成page信息，以及对parts进行重组（中间可能含有空格的情况）
         if len(parts) == WITH_PAGEINFO_LENGTH:
-            page = parts[2]
+            # 最后一页是否为空,为空则进行更新parts，不为空则设置page
+            if parts[2].isdigit():
+                page = parts[2]
+            else:
+                merged_parts = "".join(parts[1:])
+                parts = [parts[0], merged_parts]
         elif len(parts) == WITHOUT_PAGEINFO_LENGTH:
             pass
         else:
@@ -40,12 +45,12 @@ class BookmarkUtil:
             else:
                 merged_parts = "".join(parts[1:])
                 parts = [parts[0], merged_parts]
-            logger.info(parts)
+            # logger.info(parts)
             # raise LineSplitException(f"书签行分割异常,行数为{lineIndex}")
-
         # 判断缩进数量
-        # fixme page的bug
-        logger.info(f"page 为 {page}")
+        if page != -1:
+            logger.info(parts)
+        # logger.info(f"page 为 {page}")
         if cls.__isMatchNoneIndentationPattern(bookmarkIndex):
             return BookmarkLine(0, bookmarkIndex, parts[1], page)
         elif cls.__isMatchOneIndentationPattern(bookmarkIndex):
@@ -67,7 +72,7 @@ class BookmarkUtil:
         :param bookmarkLines:
         :return:
         """
-        #
+        logger.info("【命令行提示】进入交互式输入页数模式")
         bookmarkLinesWithIndex = {
             "index": 0,
             "bookmarkLines": bookmarkLines
@@ -76,12 +81,12 @@ class BookmarkUtil:
             _index = bookmarkLinesWithIndex["index"]
             bookmarkLine = bookmarkLinesWithIndex["bookmarkLines"][_index]
             logger.info(
-                f"【default】【old】这是书签行信息：行数为{_index + 1}，{bookmarkLine.index + bookmarkLine.content + bookmarkLine.page}")
+                f"【default】【old】这是书签行信息：行数为{_index + 1}，{bookmarkLine.index + bookmarkLine.content}\t{str(bookmarkLine.page)}")
             print(
                 "对应页码直接输入数字，跳过请直接回车，展示书签行信息输入'ls -n num -d'(-d为可选参数表明输出后面的,不输入-n则默认输出全部）,跳转至指定的书签行重新输入jp num")
             reiceive_command = input()
             commonCommand = CommandParser.parse2Command(reiceive_command)
-            commonCommand.execute()
+            commonCommand.execute(bookmarkLinesWithIndex=bookmarkLinesWithIndex)
         logger.info("执行完毕")
 
     # 对书签页面进行偏移

@@ -15,6 +15,10 @@ class BookmarkLine:
         self.content = content
         self.page = page
 
+    def getPageStatus(self) -> bool:
+        if self.page == -1:
+            return False
+        return True
+
     def __str__(self):
-        logger.info(self.intentationCount * "\t" + self.index + " " + self.content + "\t" + str(self.page))
         return self.intentationCount * "\t" + self.index + " " + self.content + "\t" + str(self.page)

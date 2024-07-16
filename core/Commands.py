@@ -23,7 +23,7 @@ class BookmarLinePageInputReceiver(AbstractReceiver):
         bookmarkLines[_index].page = inputPage
         bookmarkLine = bookmarkLines[_index]
         logging.info(
-            f"【default】【old】这是书签行信息：行数为{_index + 1}，{bookmarkLine.index + bookmarkLine.content + bookmarkLine.page}")
+            f"【default】【old】这是书签行信息：行数为{_index + 1}，{bookmarkLine.index + bookmarkLine.content + str(bookmarkLine.page)}")
 
 
 class BookmarkLineSkipReceiver(AbstractReceiver):
@@ -61,14 +61,14 @@ class BookmarkShowReceiver(AbstractReceiver):
             while _index < len(bookmarkLinesWithIndex["bookmarkLines"]) and count > 0:
                 bookmarkLine = bookmarkLinesWithIndex["bookmarkLines"][_index]
                 logging.info(
-                    f"【show】这是书签行信息：行数为{_index + 1}，{bookmarkLine.index + bookmarkLine.content + bookmarkLine.page}")
+                    f"【show】这是书签行信息：行数为{_index + 1}，{bookmarkLine.index + bookmarkLine.content + str(bookmarkLine.page)}")
                 _index += 1
                 count -= 1
         else:
             while _index > -1 and count > 0:
                 bookmarkLine = bookmarkLinesWithIndex["bookmarkLines"][_index]
                 logging.info(
-                    f"【show】这是书签行信息：行数为{_index + 1}，{bookmarkLine.index + bookmarkLine.content + bookmarkLine.page}")
+                    f"【show】这是书签行信息：行数为{_index + 1}，{bookmarkLine.index + bookmarkLine.content + str(bookmarkLine.page)}")
                 _index -= 1
                 count -= 1
         logging.info("【show】show done")
@@ -87,8 +87,8 @@ class CommonCommand:
         self.commandReceiver = commandReceiver
         self.commandOptions = commandOptions
 
-    def execute(self, *args, **kwargs):
-        self.commandReceiver.handleCommand(options=self.commandOptions, *args, **kwargs)
+    def execute(self, **kwargs):
+        self.commandReceiver.handleCommand(options=self.commandOptions, **kwargs)
 
 
 class CommandParser:
