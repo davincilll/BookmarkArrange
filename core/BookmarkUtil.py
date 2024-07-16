@@ -86,7 +86,11 @@ class BookmarkUtil:
                 "对应页码直接输入数字，跳过请直接回车，展示书签行信息输入'ls -n num -d'(-d为可选参数表明输出后面的,不输入-n则默认输出全部）,跳转至指定的书签行重新输入jp num")
             reiceive_command = input()
             commonCommand = CommandParser.parse2Command(reiceive_command)
+
+            # changeIndex(bookmarkLinesWithIndex=bookmarkLinesWithIndex)
+            logger.debug(f"当前书签行索引为{bookmarkLinesWithIndex['index']}")
             commonCommand.execute(bookmarkLinesWithIndex=bookmarkLinesWithIndex)
+            logger.debug(f"当前书签行索引为{bookmarkLinesWithIndex['index']}")
         logger.info("执行完毕")
 
     # 对书签页面进行偏移
@@ -114,3 +118,8 @@ class BookmarkUtil:
             if re.match(pattern, s):
                 return True
         return False
+
+
+def changeIndex(bookmarkLinesWithIndex):
+    logger.debug(f"当前书签行索引为{bookmarkLinesWithIndex['index']}+1")
+    bookmarkLinesWithIndex["index"] += 1

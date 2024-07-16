@@ -24,6 +24,8 @@ class BookmarLinePageInputReceiver(AbstractReceiver):
         bookmarkLine = bookmarkLines[_index]
         logging.info(
             f"【default】【old】这是书签行信息：行数为{_index + 1}，{bookmarkLine.index + bookmarkLine.content + str(bookmarkLine.page)}")
+        # 指针后移
+        bookmarkLinesWithIndex["index"] += 1
 
 
 class BookmarkLineSkipReceiver(AbstractReceiver):
@@ -56,6 +58,7 @@ class BookmarkShowReceiver(AbstractReceiver):
         commandOptions.update(options)
         _index = bookmarkLinesWithIndex["index"]
         count = commandOptions["-n"]
+        logger.debug(f"count:{count},count>0:{count > 0}")
         if commandOptions["-d"]:
             # 这个是当前所在的行，也是即将修改的行
             while _index < len(bookmarkLinesWithIndex["bookmarkLines"]) and count > 0:
@@ -71,6 +74,7 @@ class BookmarkShowReceiver(AbstractReceiver):
                     f"【show】这是书签行信息：行数为{_index + 1}，{bookmarkLine.index + bookmarkLine.content + str(bookmarkLine.page)}")
                 _index -= 1
                 count -= 1
+        #         fixme:这里没打印
         logging.info("【show】show done")
 
 
