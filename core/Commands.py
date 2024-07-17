@@ -1,14 +1,12 @@
-import logging
-from abc import ABC, abstractmethod
+from abc import ABC
 from math import inf
 
-from loguru import logger
-
-from core.BookmarkLine import BookmarkLine
 from core.exception.CommandParseException import CommandParseException
+from settings.logs import nb_logger
 
 
 class AbstractReceiver(ABC):
+
     def handleCommand(self, options: dict, *args, **kwargs):
         pass
 
@@ -22,8 +20,8 @@ class BookmarLinePageInputReceiver(AbstractReceiver):
         inputPage = options.pop("inputPage")
         bookmarkLines[_index].page = inputPage
         bookmarkLine = bookmarkLines[_index]
-        logging.info(
-            f"【default】【old】这是书签行信息：行数为{_index + 1}，{bookmarkLine.index + bookmarkLine.content + str(bookmarkLine.page)}")
+        nb_logger.info(
+            f"【default】【new】这是书签行信息：行数为{_index + 1}，{bookmarkLine.index + bookmarkLine.content}\n{str(bookmarkLine.page)}")
         # 指针后移
         bookmarkLinesWithIndex["index"] += 1
 
@@ -34,7 +32,7 @@ class BookmarkLineSkipReceiver(AbstractReceiver):
         bookmarkLinesWithIndex = kwargs.pop("bookmarkLinesWithIndex")
 
         bookmarkLinesWithIndex["index"] += 1
-        logger.info("【skip】pass")
+        nb_logger.info("【skip】pass")
 
 
 class BookmarkLineJumpReceiver(AbstractReceiver):
@@ -42,7 +40,7 @@ class BookmarkLineJumpReceiver(AbstractReceiver):
         bookmarkLinesWithIndex = kwargs.pop("bookmarkLinesWithIndex")
         jumpRow = options.pop("jumpRow")
         bookmarkLinesWithIndex["index"] = jumpRow - 1
-        logger.info(f"【jump】jump to {jumpRow} row")
+        nb_logger.warning(f"【jump】jump to {jumpRow} row")
 
 
 class BookmarkShowReceiver(AbstractReceiver):
@@ -58,24 +56,23 @@ class BookmarkShowReceiver(AbstractReceiver):
         commandOptions.update(options)
         _index = bookmarkLinesWithIndex["index"]
         count = commandOptions["-n"]
-        logger.debug(f"count:{count},count>0:{count > 0}")
+        nb_logger.debug(f"count:{count},count>0:{count > 0}")
         if commandOptions["-d"]:
             # 这个是当前所在的行，也是即将修改的行
             while _index < len(bookmarkLinesWithIndex["bookmarkLines"]) and count > 0:
                 bookmarkLine = bookmarkLinesWithIndex["bookmarkLines"][_index]
-                logging.info(
+                nb_logger.info(
                     f"【show】这是书签行信息：行数为{_index + 1}，{bookmarkLine.index + bookmarkLine.content + str(bookmarkLine.page)}")
                 _index += 1
                 count -= 1
         else:
             while _index > -1 and count > 0:
                 bookmarkLine = bookmarkLinesWithIndex["bookmarkLines"][_index]
-                logging.info(
+                nb_logger.info(
                     f"【show】这是书签行信息：行数为{_index + 1}，{bookmarkLine.index + bookmarkLine.content + str(bookmarkLine.page)}")
                 _index -= 1
                 count -= 1
-        #         fixme:这里没打印
-        logging.info("【show】show done")
+        nb_logger.warning("【show】show done")
 
 
 class CommonCommand:
@@ -110,7 +107,7 @@ class CommandParser:
         options = {}
         if inputRawCommand.startswith(cls.JUMP_INDEX_COMMAND) and len(result) == 2 and result[1].isdigit():
             # 放入 inputPage参数
-            options["inputPage"] = int(result[1])
+            options["jumpRow"] = int(result[1])
             return CommonCommand(BookmarkLineJumpReceiver(), options)
         elif inputRawCommand.startswith(cls.SHOW_COMMAND):
             result.remove(cls.SHOW_COMMAND)

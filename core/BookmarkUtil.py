@@ -1,12 +1,10 @@
-import logging
 import re
-
-from loguru import logger
 
 from core.BookmarkLine import BookmarkLine
 from core.Commands import CommandParser
-from core.exception.LineSplitException import LineSplitException
+from core.exception.CommandParseException import CommandParseException
 from core.exception.IndexMatchException import IndexMatchException
+from settings.logs import nb_logger
 
 WITHOUT_PAGEINFO_LENGTH = 2
 WITH_PAGEINFO_LENGTH = 3
@@ -49,8 +47,7 @@ class BookmarkUtil:
             # raise LineSplitException(f"书签行分割异常,行数为{lineIndex}")
         # 判断缩进数量
         if page != -1:
-            logger.info(parts)
-        # logger.info(f"page 为 {page}")
+            nb_logger.debug(f"page 为 {page}")
         if cls.__isMatchNoneIndentationPattern(bookmarkIndex):
             return BookmarkLine(0, bookmarkIndex, parts[1], page)
         elif cls.__isMatchOneIndentationPattern(bookmarkIndex):
@@ -72,7 +69,7 @@ class BookmarkUtil:
         :param bookmarkLines:
         :return:
         """
-        logger.info("【命令行提示】进入交互式输入页数模式")
+        nb_logger.info("【命令行提示】进入交互式输入页数模式")
         bookmarkLinesWithIndex = {
             "index": 0,
             "bookmarkLines": bookmarkLines
@@ -80,18 +77,21 @@ class BookmarkUtil:
         while bookmarkLinesWithIndex["index"] < len(bookmarkLinesWithIndex["bookmarkLines"]):
             _index = bookmarkLinesWithIndex["index"]
             bookmarkLine = bookmarkLinesWithIndex["bookmarkLines"][_index]
-            logger.info(
+            nb_logger.warning(
+                "\n1.对应页码直接输入数字\n2. 跳过请直接回车\n3. 展示书签行信息输入'ls -n num -d'(-d为可选参数表明输出后面的,不输入-n则默认输出全部）\n4. 跳转至指定的书签行重新输入jp num")
+            nb_logger.info(
                 f"【default】【old】这是书签行信息：行数为{_index + 1}，{bookmarkLine.index + bookmarkLine.content}\t{str(bookmarkLine.page)}")
-            print(
-                "对应页码直接输入数字，跳过请直接回车，展示书签行信息输入'ls -n num -d'(-d为可选参数表明输出后面的,不输入-n则默认输出全部）,跳转至指定的书签行重新输入jp num")
             reiceive_command = input()
-            commonCommand = CommandParser.parse2Command(reiceive_command)
+            try:
+                commonCommand = CommandParser.parse2Command(reiceive_command)
+                # changeIndex(bookmarkLinesWithIndex=bookmarkLinesWithIndex)
+                nb_logger.debug(f"当前书签行索引为{bookmarkLinesWithIndex['index']}")
+                commonCommand.execute(bookmarkLinesWithIndex=bookmarkLinesWithIndex)
+                nb_logger.debug(f"当前书签行索引为{bookmarkLinesWithIndex['index']}")
+            except CommandParseException:
+                nb_logger.warning("命令行输入错误，请重新输入")
 
-            # changeIndex(bookmarkLinesWithIndex=bookmarkLinesWithIndex)
-            logger.debug(f"当前书签行索引为{bookmarkLinesWithIndex['index']}")
-            commonCommand.execute(bookmarkLinesWithIndex=bookmarkLinesWithIndex)
-            logger.debug(f"当前书签行索引为{bookmarkLinesWithIndex['index']}")
-        logger.info("执行完毕")
+        nb_logger.info("执行完毕")
 
     # 对书签页面进行偏移
     @classmethod
@@ -119,7 +119,22 @@ class BookmarkUtil:
                 return True
         return False
 
-
-def changeIndex(bookmarkLinesWithIndex):
-    logger.debug(f"当前书签行索引为{bookmarkLinesWithIndex['index']}+1")
-    bookmarkLinesWithIndex["index"] += 1
+# # 设置书的偏移用的
+# def setPageOffset(text, offset):
+#     lines = text.split('\n')
+#     index = 0
+#     while index < len(lines):
+#         line = lines[index]
+#         parttern = r"\b[0-9]+\b$"
+#         # 输入页码数
+#         m = re.search(parttern, line)
+#         if not m:
+#             logger.info("有问题的line:" + line)
+#         original = int(m.group())
+#         realPage = original + offset
+#         if m:
+#             line = re.sub(parttern, str(realPage), line)
+#             lines[index] = line
+#             index += 1
+#     indent_text = '\n'.join(lines)
+#     return indent_text

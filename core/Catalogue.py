@@ -1,10 +1,9 @@
 # 用于封装书签信息
 import re
 
-from loguru import logger
-
 from core.BookmarkLine import BookmarkLine
 from core.BookmarkUtil import BookmarkUtil
+from settings.logs import nb_logger
 
 
 class Catalogue:
@@ -57,6 +56,6 @@ class Catalogue:
             # 如果书签行的页面还没有确定，则返回false
             # 这里会返回false
             if not bookmarkLine.getPageStatus():
-                logger.warning("目录页数还没有确定")
+                nb_logger.warning("目录页数还没有确定")
                 return False
         return True
