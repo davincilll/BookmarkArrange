@@ -20,5 +20,10 @@ class BookmarkLine:
             return False
         return True
 
+    def getPage(self) -> str:
+        if self.page == -1:
+            return ""
+        return str(self.page)
+
     def __str__(self):
-        return self.intentationCount * "\t" + self.index + " " + self.content + "\t" + str(self.page)
+        return self.intentationCount * "\t" + str(self.index) + " " + self.content + "\t" + str(self.getPage())

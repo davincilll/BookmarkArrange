@@ -10,10 +10,6 @@ from core.BookmarkUtil import BookmarkUtil
 from core.Catalogue import Catalogue
 
 
-def test():
-    logger = nb_log.get_logger("demo")
-
-
 def main():
     # 生成书签对象
     catalogue = Catalogue()
@@ -21,14 +17,10 @@ def main():
     catalogue.getRowLinesByRowContent()
     needPageInfo = not catalogue.getPageStatus()
     if needPageInfo:
-        # 这里去完成输入事前的功能
-
         BookmarkUtil.supplementPageOfBookmarkByInteractive(catalogue.BookmarkLines)
     catalogue.generateFormatContent()
     catalogue.outputFormatContent2File("./files/output.txt")
 
 
-
 if __name__ == '__main__':
     main()
-    # test()

@@ -4,17 +4,19 @@ from core.BookmarkLine import BookmarkLine
 from core.Commands import CommandParser
 from core.exception.CommandParseException import CommandParseException
 from core.exception.IndexMatchException import IndexMatchException
-from settings.logs import nb_logger
+from settings.logs import nb_logger, debug_logger
 
 WITHOUT_PAGEINFO_LENGTH = 2
 WITH_PAGEINFO_LENGTH = 3
+# 规定全都不匹配时的缩进数量
+INDENTATIONCOUNTWITHOUTMATCH = 2
 
 
 class BookmarkUtil:
     # 一级标题匹配
-    NONE_INDENTATION_PATTERNS = [r"^第[0-9]+章"]
+    NONE_INDENTATION_PATTERNS = [r"^第[0-9]+章", r"^第[一|二|三|四|五|六|七|八|九|十]部分"]
     # 二级标题匹配
-    ONE_INDENTATION_PATTERNS = [r'^[0-9]+\.[0-9]+(?!\.[0-9]+)']
+    ONE_INDENTATION_PATTERNS = [r'^[0-9]+\.[0-9]+(?!\.[0-9]+)', r'^[0-9]+\b']
     # 三级标题匹配
     TWO_INDENTATION_PATTERNS = [r"^[0-9]+\.[0-9]+\.[0-9]+(?!\.[0-9]+)"]
 
@@ -22,44 +24,60 @@ class BookmarkUtil:
     def acquireBookmarkLine(cls, line, lineIndex):
         """按照匹配模式分割书签行，lineIndex为书签行在文件中的行号"""
         # 1. 使用标题匹配分割得到三部分
-        parts = re.split(r'[\s\t]+', line)
-        bookmarkIndex = parts[0]
+        parts = re.split(r'\s+', line)
+        debug_logger.debug(f"分割后的结果为{parts}")
+        # 去除可能存在的空字符串
+        parts = [part for part in parts if part != ""]
+        bookmarkIndex = ""
+        # intentationCount = 0
+        # content = None
         page = -1
-        # 这里生成page信息，以及对parts进行重组（中间可能含有空格的情况）
-        if len(parts) == WITH_PAGEINFO_LENGTH:
-            # 最后一页是否为空,为空则进行更新parts，不为空则设置page
-            if parts[2].isdigit():
-                page = parts[2]
-            else:
-                merged_parts = "".join(parts[1:])
-                parts = [parts[0], merged_parts]
-        elif len(parts) == WITHOUT_PAGEINFO_LENGTH:
-            pass
+        # 这里需要进行重构，检测头，检测尾
+        hasIndex = cls.__isMatchPagePattern(parts[0])
+        debug_logger.debug(f"分割的最后一位是{parts[-1]}")
+        hasPage = parts[-1].isdigit()
+        if hasIndex and hasPage:
+            # 中间进行合并
+            merged_parts = "".join(parts[1:-1])
+            parts = [parts[0], merged_parts, parts[-1]]
+            bookmarkIndex = parts[0]
+            intentationCount = cls.__getIntentationCount(bookmarkIndex)
+            content = parts[1]
+            page = int(parts[2])
+        elif hasIndex and not hasPage:
+            merged_parts = "".join(parts[1:])
+            parts = [parts[0], merged_parts]
+            bookmarkIndex = parts[0]
+            intentationCount = cls.__getIntentationCount(bookmarkIndex)
+            content = parts[1]
+        elif not hasIndex and hasPage:
+            merged_parts = "".join(parts[0:-1])
+            parts = [merged_parts, parts[-1]]
+            intentationCount = INDENTATIONCOUNTWITHOUTMATCH
+            content = parts[0]
+            page = parts[1]
+        # 没有索引也没有页数
         else:
-            if parts[-1].isdigit():
-                # 将中间的部分进行合并
-                merged_parts = "".join(parts[1:-1])
-                parts = [parts[0], merged_parts, parts[-1]]
-            else:
-                merged_parts = "".join(parts[1:])
-                parts = [parts[0], merged_parts]
-            # logger.info(parts)
-            # raise LineSplitException(f"书签行分割异常,行数为{lineIndex}")
-        # 判断缩进数量
-        if page != -1:
-            nb_logger.debug(f"page 为 {page}")
-        if cls.__isMatchNoneIndentationPattern(bookmarkIndex):
-            return BookmarkLine(0, bookmarkIndex, parts[1], page)
-        elif cls.__isMatchOneIndentationPattern(bookmarkIndex):
-            return BookmarkLine(1, bookmarkIndex, parts[1], page)
-        elif cls.__isMatchTwoIndentationPattern(bookmarkIndex):
-            return BookmarkLine(2, bookmarkIndex, parts[1], page)
-        else:
-            raise IndexMatchException("标签行索引与现有匹配规则不匹配，行数为{lineIndex}")
+            merged_parts = "".join(parts[0:])
+            intentationCount = INDENTATIONCOUNTWITHOUTMATCH
+            content = merged_parts
+        debug_logger.debug(
+            f"完成书签行分割,最后各个参数为intentationCount={intentationCount},bookmarkIndex={bookmarkIndex},content={content},page={page}")
+        return BookmarkLine(intentationCount, bookmarkIndex, content, page)
 
     # 按照匹配规则对书签进行替换
     @classmethod
     def replaceBookmarkByPattern(cls, pattern, bookmark):
+        pass
+
+    # todo: 待完善
+    @classmethod
+    def OCRforPageofBookmark(cls, bookmarkLines):
+        """
+        通过OCR识别书签的页面信息
+        :param bookmarkLines:
+        :return:
+        """
         pass
 
     @classmethod
@@ -99,9 +117,20 @@ class BookmarkUtil:
         pass
 
     @classmethod
+    def __getIntentationCount(cls, bookmarkIndex):
+        if cls.__isMatchNoneIndentationPattern(bookmarkIndex):
+            return 0
+        if cls.__isMatchOneIndentationPattern(bookmarkIndex):
+            return 1
+        if cls.__isMatchTwoIndentationPattern(bookmarkIndex):
+            return 2
+        raise IndexMatchException(f"标签行索引与现有匹配规则不匹配")
+
+    @classmethod
     def __isMatchNoneIndentationPattern(cls, s):
         for pattern in cls.NONE_INDENTATION_PATTERNS:
             if re.match(pattern, s):
+                debug_logger.debug(f"s 为 {s},match none indentation,pattern {pattern}")
                 return True
         return False
 
@@ -109,16 +138,33 @@ class BookmarkUtil:
     def __isMatchOneIndentationPattern(cls, s):
         for pattern in cls.ONE_INDENTATION_PATTERNS:
             if re.match(pattern, s):
+                debug_logger.debug(f"s 为 {s},match one indentation,pattern {pattern}")
                 return True
         return False
 
     @classmethod
     def __isMatchTwoIndentationPattern(cls, s):
+        # 这里在没有四级标题的情况下始终返回true，即如果没有匹配的话就进入这个
+        debug_logger.debug(f"s 为 {s},match two indentation")
+        # return True
         for pattern in cls.TWO_INDENTATION_PATTERNS:
             if re.match(pattern, s):
                 return True
         return False
 
+    @classmethod
+    def __isNotMatchPattern(cls, s):
+        for pattern in cls.NONE_INDENTATION_PATTERNS + cls.ONE_INDENTATION_PATTERNS + cls.TWO_INDENTATION_PATTERNS:
+            if re.match(pattern, s):
+                return False
+        return True
+
+    @classmethod
+    def __isMatchPagePattern(cls, s):
+        for pattern in cls.NONE_INDENTATION_PATTERNS + cls.ONE_INDENTATION_PATTERNS + cls.TWO_INDENTATION_PATTERNS:
+            if re.match(pattern, s):
+                return True
+        return False
 # # 设置书的偏移用的
 # def setPageOffset(text, offset):
 #     lines = text.split('\n')

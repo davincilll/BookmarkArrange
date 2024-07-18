@@ -3,7 +3,7 @@ import re
 
 from core.BookmarkLine import BookmarkLine
 from core.BookmarkUtil import BookmarkUtil
-from settings.logs import nb_logger
+from settings.logs import nb_logger, debug_logger
 
 
 class Catalogue:
@@ -43,6 +43,7 @@ class Catalogue:
             count += 1
             # 按照正则表达式，进行分割字符串，分为三部分，并确定使用缩进的数量
             bookmarkLine = BookmarkUtil.acquireBookmarkLine(line, count)
+            debug_logger.debug(f"整理后的bookmarkLine为{bookmarkLine}")
             self.BookmarkLines.append(bookmarkLine)
 
     # 获取page状态
@@ -55,7 +56,13 @@ class Catalogue:
         for bookmarkLine in self.BookmarkLines:
             # 如果书签行的页面还没有确定，则返回false
             # 这里会返回false
-            if not bookmarkLine.getPageStatus():
-                nb_logger.warning("目录页数还没有确定")
-                return False
-        return True
+            #     if not bookmarkLine.getPageStatus():
+            #         nb_logger.warning("目录页数还没有确定")
+            #         return False
+            # return True
+            # 这里切换成只要有一个页数存在，就会返回True
+            # 因为存在部分书页的一级标题是没有书页的，但是后面是有书页的
+            # todo： 以配置的形式进行切换
+            if bookmarkLine.getPageStatus():
+                return True
+        return False
